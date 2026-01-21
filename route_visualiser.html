@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Briv Jump Tracker - Dual Formation</title>
+  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+       body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f9fafb; }
+    .container { max-width: 1400px; margin: 0 auto; padding: 2rem; }
+    .card { background: white; border-radius: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 1.5rem; margin-bottom: 1.5rem; }
+    .upload-zone { border: 2px dashed #d1d5db; border-radius: 0.5rem; padding: 3rem; text-align: center; transition: all 0.2s; cursor: pointer; background: #f9fafb; }
+    .upload-zone:hover { border-color: #9ca3af; }
+    .upload-zone.active { border-color: #3b82f6; background: #eff6ff; }
+    .btn { padding: 0.75rem 1.5rem; border-radius: 0.5rem; border: none; cursor: pointer; font-weight: 600; transition: all 0.2s; }
+    .btn-primary { background: #3b82f6; color: white; }
+    .btn-primary:hover { background: #2563eb; }
+    .alert { padding: 1.5rem; border-radius: 0.5rem; margin-bottom: 1.5rem; }
+    .alert-success { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+    thead { background: #f3f4f6; position: sticky; top: 0; }
+    th, td { padding: 0.75rem 1rem; text-align: left; border-bottom: 1px solid #e5e7eb; }
+    th { font-weight: 600; color: #374151; }
+    td { color: #1f2937; }
+    .zone-cell { font-family: monospace; font-size: 0.85rem; }
+    .jump-short { background: #fee2e2; border-left: 4px solid #dc2626; }
+    .spinner { border: 3px solid #e5e7eb; border-top-color: #3b82f6; border-radius: 50%; width: 3rem; height: 3rem; animation: spin 1s linear infinite; margin: 0 auto 1rem; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .icon-lg { width: 4rem; height: 4rem; margin: 0 auto 1rem; }
+    input[type="file"] { display: none; }
+    input[type="number"] { padding: 0.5rem 0.75rem; border: 1px solid #d1d5db; border-radius: 0.375rem; width: 80px; font-size: 1rem; }
+    h1 { font-size: 1.875rem; font-weight: bold; color: #1f2937; margin-bottom: 0.5rem; }
+    h3 { font-size: 1.125rem; font-weight: 600; margin-bottom: 0.5rem; }
+    .text-gray { color: #6b7280; }
+    .text-center { text-align: center; }
+    .header-flex { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem; }
+    .file-info { display: flex; align-items: center; color: #6b7280; font-size: 0.875rem; }
+    .icon { width: 1.5rem; height: 1.5rem; margin-right: 0.75rem; }
+    .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; }
+    .summary-item { padding: 1rem; background: #f9fafb; border-radius: 0.5rem; text-align: center; }
+    .summary-label { font-size: 0.7rem; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; }
+    .summary-value { font-size: 1.5rem; font-weight: bold; color: #1f2937; margin-top: 0.25rem; }
+    .section-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem; }
+    .badge { padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; }
+    .badge-green { background: #bbf7d0; color: #166534; }
+    .badge-red { background: #fee2e2; color: #dc2626; }
+    .badge-blue { background: #dbeafe; color: #1e40af; }
+    .badge-purple { background: #ede9fe; color: #6d28d9; }
+    .badge-gray { background: #e5e7eb; color: #374151; }
+    .formation-card { border: 2px solid #e5e7eb; border-radius: 0.5rem; padding: 1rem; }
+    .formation-q { border-color: #3b82f6; background: #eff6ff; }
+    .formation-e { border-color: #8b5cf6; background: #f5f3ff; }
+    .formation-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
+    .formation-title { font-weight: 600; font-size: 1rem; }
+    .formation-q .formation-title { color: #1e40af; }
+    .formation-e .formation-title { color: #6d28d9; }
+    .stats-row { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+    .stat-item { display: flex; flex-direction: column; }
+    .stat-label { font-size: 0.7rem; color: #6b7280; text-transform: uppercase; }
+    .stat-value { font-size: 1.25rem; font-weight: bold; }
+    .config-row { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid rgba(0,0,0,0.1); }
+    .config-label { font-size: 0.875rem; color: #374151; }
+    .jump-sequence { font-family: monospace; font-size: 0.7rem; background: #f3f4f6; padding: 0.5rem; border-radius: 0.25rem; overflow-x: auto; white-space: nowrap; }
+    .jump { display: inline-block; padding: 0.15rem 0.4rem; margin: 0.1rem; border-radius: 0.25rem; font-size: 0.7rem; }
+    .jump-q { background: #dbeafe; color: #1e40af; }
+    .jump-e { background: #ede9fe; color: #6d28d9; }
+    .jump-q-short { background: #fecaca; color: #991b1b; border: 1px solid #dc2626; }
+    .jump-e-short { background: #fecaca; color: #991b1b; border: 1px solid #dc2626; }
+    .tabs { display: flex; gap: 0.5rem; margin-bottom: 1rem; border-bottom: 2px solid #e5e7eb; padding-bottom: 0.5rem; }
+    .tab { padding: 0.5rem 1rem; border-radius: 0.375rem 0.375rem 0 0; cursor: pointer; font-weight: 500; transition: all 0.2s; }
+    .tab:hover { background: #f3f4f6; }
+    .tab.active { background: #3b82f6; color: white; }
+    .tab-q.active { background: #3b82f6; }
+    .tab-e.active { background: #8b5cf6; }
+    .info-box { background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 0.5rem; padding: 0.75rem 1rem; margin-bottom: 1rem; font-size: 0.875rem; color: #0369a1; }
+    .toggle-container { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem; }
+    .toggle-label { font-size: 0.875rem; color: #e2e8f0; }
+    .toggle { position: relative; width: 40px; height: 22px; background: #475569; border-radius: 11px; cursor: pointer; transition: background 0.2s; }
+    .toggle.active { background: #3b82f6; }
+    .toggle-knob { position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; background: #f1f5f9; border-radius: 50%; transition: left 0.2s; }
+    .toggle.active .toggle-knob { left: 20px; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useMemo } = React;
+
+    const Icons = {
+      Upload: () => (
+        <svg className="icon-lg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+        </svg>
+      ),
+      FileText: () => (
+        <svg className="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+      )
+    };
+
+    const BrivJumpTracker = () => {
+      const [fileContent, setFileContent] = useState(null);
+      const [fileName, setFileName] = useState(null);
+      const [dragActive, setDragActive] = useState(false);
+      const [expectedJumpsQ, setExpectedJumpsQ] = useState(12);
+      const [expectedJumpsE, setExpectedJumpsE] = useState(11);
+      const [activeTab, setActiveTab] = useState('all');
+      const [showZones, setShowZones] = useState(true);
+
+      const extractZoneTransitions = (line) => {
+        const transitions = [];
+        const pattern = /z(\d+) intent: ([QE]) to z(\d*)/g;
+        let match;
+
+        while ((match = pattern.exec(line)) !== null) {
+          transitions.push({
+            from: parseInt(match[1]),
+            type: match[2],
+            to: match[3] ? parseInt(match[3]) : null,
+            raw: match[0],
+            matchIndex: match.index
+          });
+        }
+
+        return transitions;
+      };
+
+      const results = useMemo(() => {
+        if (!fileContent) return null;
+
+        const lines = fileContent.split('\n').filter(line => line.trim());
+        const allEntries = [];
+        const globalStats = {
+          Q: { total: 0, success: 0, short: 0, over: 0 },
+          E: { total: 0, success: 0, short: 0, over: 0 },
+          totalEntries: 0,
+          entriesWithIssues: 0,
+          skippedDupes: 0
+        };
+
+        for (const line of lines) {
+          const entryMatch = line.match(/^(\d+),/);
+          if (!entryMatch) continue;
+
+          const entryId = entryMatch[1];
+          const transitions = extractZoneTransitions(line);
+
+          if (transitions.length < 2) continue;
+
+          const jumps = [];
+          const entryStats = {
+            Q: { total: 0, success: 0, short: 0, over: 0 },
+            E: { total: 0, success: 0, short: 0, over: 0 }
+          };
+          let skippedInEntry = 0;
+
+          for (let i = 0; i < transitions.length - 1; i++) {
+            const current = transitions[i];
+            const next = transitions[i + 1];
+
+            const zoneDistance = next.from - current.from;
+
+            // Skip duplicates (0 jump distance - same zone to same zone)
+            if (zoneDistance === 0) {
+              skippedInEntry++;
+              globalStats.skippedDupes++;
+              continue;
+            }
+
+            // Skip negative jumps (shouldn't happen in normal runs, likely reset/weird data)
+            if (zoneDistance < 0) {
+              skippedInEntry++;
+              continue;
+            }
+
+            // Convert zone distance to jump count (zones skipped = distance - 1)
+            const actualJump = zoneDistance - 1;
+            const expectedJump = current.type === 'Q' ? expectedJumpsQ : expectedJumpsE;
+            const difference = actualJump - expectedJump;
+
+            const jumpResult = {
+              entryId,
+              index: i,
+              fromZone: current.from,
+              toZone: next.from,
+              jumpType: current.type,
+              expectedJump,
+              actualJump,
+              difference,
+              isSuccess: difference === 0,
+              isShort: difference < 0,
+              isOver: difference > 0
+            };
+
+            const typeStats = entryStats[current.type];
+            typeStats.total++;
+
+            if (jumpResult.isSuccess) {
+              typeStats.success++;
+            } else if (jumpResult.isShort) {
+              typeStats.short++;
+            } else if (jumpResult.isOver) {
+              typeStats.over++;
+            }
+
+            jumps.push(jumpResult);
+          }
+
+          // Aggregate to global
+          ['Q', 'E'].forEach(type => {
+            globalStats[type].total += entryStats[type].total;
+            globalStats[type].success += entryStats[type].success;
+            globalStats[type].short += entryStats[type].short;
+            globalStats[type].over += entryStats[type].over;
+          });
+
+          globalStats.totalEntries++;
+          if (entryStats.Q.short > 0 || entryStats.E.short > 0 || 
+              entryStats.Q.over > 0 || entryStats.E.over > 0) {
+            globalStats.entriesWithIssues++;
+          }
+
+          allEntries.push({
+            entryId,
+            jumps,
+            stats: entryStats,
+            skippedDupes: skippedInEntry
+          });
+        }
+
+        if (globalStats.totalEntries === 0) return null;
+
+        // Calculate rates
+        ['Q', 'E'].forEach(type => {
+          const s = globalStats[type];
+          s.successRate = s.total > 0 ? ((s.success / s.total) * 100).toFixed(1) : '0.0';
+        });
+
+        return {
+          entries: allEntries,
+          globalStats
+        };
+      }, [fileContent, expectedJumpsQ, expectedJumpsE]);
+
+      const handleFile = (file) => {
+        setFileName(file.name);
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          setFileContent(e.target.result);
+        };
+        reader.readAsText(file);
+      };
+
+      const handleDrop = (e) => {
+        e.preventDefault();
+        setDragActive(false);
+        if (e.dataTransfer.files?.[0]) handleFile(e.dataTransfer.files[0]);
+      };
+
+      const handleDragOver = (e) => { e.preventDefault(); setDragActive(true); };
+      const handleDragLeave = (e) => { e.preventDefault(); setDragActive(false); };
+      const handleFileSelect = (e) => { if (e.target.files?.[0]) handleFile(e.target.files[0]); };
+
+      const formatJumpSequence = (jumps) => {
+        return jumps.map((jump, idx) => {
+          let className = jump.jumpType === 'Q' ? 'jump-q' : 'jump-e';
+          if (jump.isShort) {
+            className = jump.jumpType === 'Q' ? 'jump-q-short' : 'jump-e-short';
+          }
+
+          return (
+            <span key={idx} className={`jump ${className}`}>
+              {jump.jumpType}{jump.actualJump}
+              {jump.isShort && <span style={{fontSize: '0.6rem'}}>↓{Math.abs(jump.difference)}</span>}
+              {jump.isOver && <span style={{fontSize: '0.6rem'}}>↑{jump.difference}</span>}
+              {showZones && <span className="zone-tag">z{jump.toZone}</span>}
+            </span>
+          );
+        });
+      };
+
+      const getFilteredIssues = () => {
+        if (!results) return [];
+        
+        return results.entries.flatMap(entry =>
+          entry.jumps.filter(j => {
+            if (j.isSuccess) return false;
+            if (activeTab === 'Q') return j.jumpType === 'Q';
+            if (activeTab === 'E') return j.jumpType === 'E';
+            return true;
+          })
+        );
+      };
+
+      // Upload screen
+      if (!fileContent) {
+        return (
+          <div className="container" style={{minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+            <div style={{maxWidth: '600px', width: '100%'}}>
+              <div className="card">
+                <h1 className="text-center">Briv Jump Tracker</h1>
+                <p className="text-gray text-center" style={{marginBottom: '1.5rem'}}>
+                  Track Briv's zone jumps with dual formation support
+                </p>
+
+                <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem'}}>
+                  <div className="formation-card formation-q">
+                    <div className="formation-title">Q Formation</div>
+                    <div style={{marginTop: '0.5rem'}}>
+                      <label className="config-label">Expected Jumps: </label>
+                      <input
+                        type="number"
+                        value={expectedJumpsQ}
+                        onChange={(e) => setExpectedJumpsQ(parseInt(e.target.value) || 1)}
+                        min="1"
+                        max="50"
+                      />
+                    </div>
+                  </div>
+                  <div className="formation-card formation-e">
+                    <div className="formation-title">E Formation</div>
+                    <div style={{marginTop: '0.5rem'}}>
+                      <label className="config-label">Expected Jumps: </label>
+                      <input
+                        type="number"
+                        value={expectedJumpsE}
+                        onChange={(e) => setExpectedJumpsE(parseInt(e.target.value) || 1)}
+                        min="1"
+                        max="50"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{background: '#fef3c7', border: '1px solid #fde68a', borderRadius: '0.5rem', padding: '1rem', marginBottom: '1.5rem'}}>
+                  <div style={{fontWeight: 600, color: '#92400e', marginBottom: '0.5rem'}}>How It Works</div>
+                  <div style={{color: '#78350f', fontSize: '0.875rem'}}>
+                    <p>Enter your <strong>jump count</strong> (zones skipped), not zone distance.</p>
+                    <ul style={{marginTop: '0.5rem', paddingLeft: '1.25rem'}}>
+                      <li><strong>12 jumps</strong> = skip 12 zones (z249 → z262)</li>
+                      <li><strong>11 jumps</strong> = skip 11 zones (z262 → z274)</li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div
+                  onDrop={handleDrop}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  className={`upload-zone ${dragActive ? 'active' : ''}`}
+                  onClick={() => document.getElementById('file-upload').click()}
+                >
+                  <Icons.Upload />
+                  <p style={{fontSize: '1.125rem', fontWeight: '600', marginBottom: '0.5rem', color: '#374151'}}>
+                    Drop your log file here
+                  </p>
+                  <p className="text-gray" style={{fontSize: '0.875rem', marginBottom: '1rem'}}>
+                    or click to browse
+                  </p>
+                  <input type="file" id="file-upload" accept=".txt,.log,.csv" onChange={handleFileSelect} />
+                  <span className="btn btn-primary">Select File</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      if (!results) {
+        return (
+          <div className="container" style={{minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+            <div className="card" style={{maxWidth: '500px'}}>
+              <h3 style={{color: '#dc2626', marginBottom: '1rem'}}>No Data Found</h3>
+              <p style={{marginBottom: '1rem', color: '#e2e8f0'}}>Could not parse zone transitions from the file.</p>
+              <button onClick={() => { setFileName(null); setFileContent(null); }} className="btn btn-primary">
+                Try Another File
+              </button>
+            </div>
+          </div>
+        );
+      }
+
+      const issues = getFilteredIssues();
+      const totalJumps = results.globalStats.Q.total + results.globalStats.E.total;
+      const totalSuccess = results.globalStats.Q.success + results.globalStats.E.success;
+      const totalShort = results.globalStats.Q.short + results.globalStats.E.short;
+      const totalOver = results.globalStats.Q.over + results.globalStats.E.over;
+
+      return (
+        <div className="container">
+          {/* Header */}
+          <div className="card">
+            <div className="header-flex">
+              <div>
+                <h1>Briv Jump Analysis</h1>
+                <div className="file-info">
+                  <Icons.FileText />
+                  <span style={{fontFamily: 'monospace'}}>{fileName}</span>
+                </div>
+              </div>
+              <button onClick={() => { setFileName(null); setFileContent(null); }} className="btn btn-primary">
+                Load New File
+              </button>
+            </div>
+          </div>
+
+          {/* Formation Stats - Side by Side */}
+          <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem'}}>
+            {/* Q Formation */}
+            <div className="formation-card formation-q">
+              <div className="formation-header">
+                <div className="formation-title">Q Formation</div>
+                <span className="badge badge-blue">{results.globalStats.Q.total} jumps</span>
+              </div>
+              <div className="stats-row">
+                <div className="stat-item">
+                  <span className="stat-label">Success</span>
+                   <span className="stat-value" style={{color: results.globalStats.Q.successRate === '100.0' ? '#166534' : '#92400e'}}>
+                    {results.globalStats.Q.successRate}%
+                  </span>
+                </div>
+                <div className="stat-item">
+                  <span className="stat-label">Perfect</span>
+                  <span className="stat-value" style={{color: '#166534'}}>{results.globalStats.Q.success}</span>
+                </div>
+                <div className="stat-item">
+                  <span className="stat-label">Short</span>
+                  <span className="stat-value" style={{color: results.globalStats.Q.short > 0 ? '#dc2626' : '#166534'}}>
+                    {results.globalStats.Q.short}
+                  </span>
+                </div>
+              </div>
+              <div className="config-row">
+                <span className="config-label">Expected:</span>
+                <input
+                  type="number"
+                  value={expectedJumpsQ}
+                  onChange={(e) => setExpectedJumpsQ(parseInt(e.target.value) || 1)}
+                  min="1"
+                  max="50"
+                  style={{width: '60px', padding: '0.25rem 0.5rem'}}
+                />
+                <span className="config-label">jumps</span>
+              </div>
+            </div>
+
+            {/* E Formation */}
+            <div className="formation-card formation-e">
+              <div className="formation-header">
+                <div className="formation-title">E Formation</div>
+                <span className="badge badge-purple">{results.globalStats.E.total} jumps</span>
+              </div>
+              <div className="stats-row">
+                <div className="stat-item">
+                  <span className="stat-label">Success</span>
+                  <span className="stat-value" style={{color: results.globalStats.E.successRate === '100.0' ? '#166534' : '#92400e'}}>
+                    {results.globalStats.E.successRate}%
+                  </span>
+                </div>
+                <div className="stat-item">
+                  <span className="stat-label">Perfect</span>
+                  <span className="stat-value" style={{color: '#166534'}}>{results.globalStats.E.success}</span>
+                </div>
+                <div className="stat-item">
+                  <span className="stat-label">Short</span>
+                  <span className="stat-value" style={{color: results.globalStats.E.short > 0 ? '#dc2626' : '#166534'}}>
+                    {results.globalStats.E.short}
+                  </span>
+                </div>
+              </div>
+              <div className="config-row">
+                <span className="config-label">Expected:</span>
+                <input
+                  type="number"
+                  value={expectedJumpsE}
+                  onChange={(e) => setExpectedJumpsE(parseInt(e.target.value) || 1)}
+                  min="1"
+                  max="50"
+                  style={{width: '60px', padding: '0.25rem 0.5rem'}}
+                />
+                <span className="config-label">jumps</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Combined Summary */}
+          <div className="card">
+            <h3 style={{marginBottom: '1rem'}}>Combined Summary</h3>
+            <div className="summary-grid">
+              <div className="summary-item">
+                <div className="summary-label">Entries</div>
+                <div className="summary-value">{results.globalStats.totalEntries}</div>
+              </div>
+              <div className="summary-item">
+                <div className="summary-label">Total Jumps</div>
+                <div className="summary-value">{totalJumps}</div>
+              </div>
+              <div className="summary-item">
+                <div className="summary-label">Perfect</div>
+                <div className="summary-value" style={{color: '#166534'}}>{totalSuccess}</div>
+              </div>
+              <div className="summary-item">
+                <div className="summary-label">Short</div>
+                <div className="summary-value" style={{color: totalShort > 0 ? '#dc2626' : '#166534'}}>
+                  {totalShort}
+                </div>
+              </div>
+              <div className="summary-item">
+                <div className="summary-label">Success Rate</div>
+                <div className="summary-value" style={{color: totalShort === 0 ? '#166534' : '#92400e'}}>
+                  {totalJumps > 0 ? ((totalSuccess / totalJumps) * 100).toFixed(1) : '0'}%
+                </div>
+              </div>
+              <div className="summary-item">
+                <div className="summary-label">Entries w/ Issues</div>
+                <div className="summary-value" style={{color: results.globalStats.entriesWithIssues > 0 ? '#dc2626' : '#166534'}}>
+                  {results.globalStats.entriesWithIssues}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Short Jumps Detail */}
+          {(totalShort > 0 || totalOver > 0) && (
+            <div className="card">
+              <div className="section-header">
+                <h3 style={{color: '#dc2626'}}>🚨 Jump Issues</h3>
+                <span className="badge badge-red">{totalShort + totalOver} total</span>
+              </div>
+
+              {/* Tabs */}
+              <div className="tabs">
+                <div 
+                  className={`tab ${activeTab === 'all' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('all')}
+                >
+                  All ({totalShort + totalOver})
+                </div>
+                <div 
+                  className={`tab tab-q ${activeTab === 'Q' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('Q')}
+                >
+                  Q ({results.globalStats.Q.short + results.globalStats.Q.over})
+                </div>
+                <div 
+                  className={`tab tab-e ${activeTab === 'E' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('E')}
+                >
+                  E ({results.globalStats.E.short + results.globalStats.E.over})
+                </div>
+              </div>
+
+              <table>
+                <thead>
+                  <tr>
+                    <th>Entry</th>
+                    <th>Type</th>
+                    <th>From</th>
+                    <th>Landed</th>
+                    <th>Expected</th>
+                    <th>Actual</th>
+                    <th>Diff</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {issues.map((jump, idx) => (
+                    <tr key={idx} className={jump.isShort ? 'jump-short' : ''}>
+                      <td style={{fontWeight: 600}}>{jump.entryId}</td>
+                      <td>
+                        <span className={`badge ${jump.jumpType === 'Q' ? 'badge-blue' : 'badge-purple'}`}>
+                          {jump.jumpType}
+                        </span>
+                      </td>
+                      <td className="zone-cell">z{jump.fromZone}</td>
+                      <td className="zone-cell">z{jump.toZone}</td>
+                      <td style={{textAlign: 'center'}}>{jump.expectedJump}</td>
+                      <td style={{textAlign: 'center', fontWeight: 'bold', color: jump.isShort ? '#dc2626' : '#166534'}}>
+                        {jump.actualJump}
+                      </td>
+                      <td style={{textAlign: 'center', fontWeight: 'bold', color: '#dc2626'}}>
+                        {jump.difference > 0 ? '+' : ''}{jump.difference}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              {/* Jump Sequences */}
+              <div style={{marginTop: '1.5rem'}}>
+                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem'}}>
+                  <h4 style={{color: '#374151'}}>Entries with Issues</h4>
+                  <div className="toggle-container">
+                    <span className="toggle-label">Show Zones</span>
+                    <div 
+                      className={`toggle ${showZones ? 'active' : ''}`}
+                      onClick={() => setShowZones(!showZones)}
+                    >
+                      <div className="toggle-knob"></div>
+                    </div>
+                  </div>
+                </div>
+                {results.entries
+                  .filter(e => e.stats.Q.short > 0 || e.stats.E.short > 0 || e.stats.Q.over > 0 || e.stats.E.over > 0)
+                  .slice(0, 10)
+                  .map((entry, idx) => (
+                    <div key={idx} style={{marginBottom: '1rem', padding: '0.75rem', background: '#f9fafb', borderRadius: '0.5rem'}}>
+                      <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem'}}>
+                        <strong style={{color: '#f1f5f9'}}>Entry {entry.entryId}</strong>
+                        <span style={{fontSize: '0.875rem', color: '#94a3b8'}}>
+                          Q: {entry.stats.Q.success}/{entry.stats.Q.total} | 
+                          E: {entry.stats.E.success}/{entry.stats.E.total}
+                        </span>
+                      </div>
+                      <div className="jump-sequence">
+                        {formatJumpSequence(entry.jumps)}
+                      </div>
+                    </div>
+                  ))
+                }
+              </div>
+            </div>
+          )}
+
+          {/* Perfect run message */}
+          {totalShort === 0 && totalOver === 0 && (
+            <div className="alert alert-success">
+              <h3>✅ Perfect Run!</h3>
+              <p>All {totalJumps} jumps matched your expected values. Q={expectedJumpsQ}j, E={expectedJumpsE}j</p>
+            </div>
+          )}
+
+          {/* Entry Details */}
+          <div className="card">
+            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem'}}>
+              <h3>All Entries</h3>
+              <div className="toggle-container">
+                <span className="toggle-label">Show Zones</span>
+                <div 
+                  className={`toggle ${showZones ? 'active' : ''}`}
+                  onClick={() => setShowZones(!showZones)}
+                >
+                  <div className="toggle-knob"></div>
+                </div>
+              </div>
+            </div>
+            <div style={{overflowX: 'auto'}}>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Entry</th>
+                    <th>Q ({expectedJumpsQ}j)</th>
+                    <th>E ({expectedJumpsE}j)</th>
+                    <th>Issues</th>
+                    <th>Jump Sequence</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {results.entries.map((entry, idx) => {
+                    const hasIssues = entry.stats.Q.short + entry.stats.E.short + entry.stats.Q.over + entry.stats.E.over > 0;
+                    return (
+                      <tr key={idx} style={{background: hasIssues ? '#fef2f2' : 'inherit'}}>
+                        <td style={{fontWeight: 600}}>{entry.entryId}</td>
+                        <td style={{color: entry.stats.Q.success === entry.stats.Q.total ? '#166534' : '#dc2626'}}>
+                          {entry.stats.Q.success}/{entry.stats.Q.total}
+                        </td>
+                        <td style={{color: entry.stats.E.success === entry.stats.E.total ? '#166534' : '#dc2626'}}>
+                          {entry.stats.E.success}/{entry.stats.E.total}
+                        </td>
+                        <td style={{color: hasIssues ? '#dc2626' : '#166534'}}>
+                          {entry.stats.Q.short + entry.stats.E.short + entry.stats.Q.over + entry.stats.E.over}
+                        </td>
+                        <td>
+                          <div className="jump-sequence">
+                            {formatJumpSequence(entry.jumps)}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    ReactDOM.render(<BrivJumpTracker />, document.getElementById('root'));
+  </script>
+</body>
+</html>
