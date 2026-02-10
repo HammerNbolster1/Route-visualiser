@@ -1,14 +1,14 @@
 This is a simple route visualiser for BrivMaster.
 
 
-REQUIREMENTS:
+# REQUIREMENTS:
 
-In IC_BrivMaster_Functions.ahk - uncomment line 120.
-
-
+In the BM Game page of the script, make sure Log Zone Progression is ticked.
 
 
-USAGE:
+
+
+# USAGE:
 
 When you first open the file, you will be able to select your jump values for formation Q and formation E.
 simply open the html file, drop your log file in and watch it visualise your route. 
